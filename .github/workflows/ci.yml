@@ -4,6 +4,11 @@ name: DSA Java CI
 # Babu's repo default branch is dev, so dev must trigger CI too —
 # otherwise a push to dev would show no CI run at all.
 # Green CI = every lesson compiles and runs clean.
+#
+# Lesson 1's Main is in a package: package com.sarat.learning;
+# so it must be compiled with -d and run by its fully qualified
+# name: java -cp out com.sarat.learning.Main
+# Plain `java Main` does NOT work for a packaged class.
 on:
   push:
     branches: [main, dev]
@@ -23,11 +28,11 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Compile and run every lesson
+      - name: Compile all lessons
         run: |
           set -e
-          for dir in lesson*/; do
-            echo "=== $dir ==="
-            (cd "$dir" && javac Main.java && java Main)
-          done
-          echo "All lessons compiled and ran clean."
+          mkdir -p out
+          javac -d out $(find . -path ./out -prune -o -name "*.java" -print)
+
+      - name: Run Lesson 1
+        run: java -cp out com.sarat.learning.Main
