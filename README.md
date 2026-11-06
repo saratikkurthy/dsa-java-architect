@@ -6,6 +6,7 @@ Every lesson lives in its own folder, runs in CI, and has a visualization.
 
 ## Repo layout
 
+
 ```
 dsa-java-architect/
 ├── .github/workflows/ci.yml   # CI: compile + run every lesson on every push/PR
