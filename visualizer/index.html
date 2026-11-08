@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DSA Visualizer — Lesson 1: Arrays &amp; Hashing</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  h1 { font-size: 1.4rem; } h2 { font-size: 1.1rem; margin-top: 2rem; }
+  .cell { display: inline-block; min-width: 44px; padding: 10px 6px; margin: 2px; text-align: center;
+          border: 2px solid #888; border-radius: 6px; font-weight: 600; }
+  .current { background: #ffe08a; border-color: #c90; }
+  .found { background: #9be7a8; border-color: #2a7; }
+  .seen { background: #dbeafe; border-color: #36c; }
+  button { padding: 8px 14px; margin: 4px 4px 4px 0; cursor: pointer; }
+  table { border-collapse: collapse; margin-top: 8px; }
+  td, th { border: 1px solid #aaa; padding: 6px 10px; text-align: left; }
+  input { padding: 6px; margin: 2px; }
+  .note { background: #f4f4f4; padding: 10px; border-radius: 6px; }
+  code { background: #eee; padding: 1px 4px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<h1>DSA Visualizer — Lesson 1: Arrays &amp; Hashing</h1>
+<p class="note">Open this file in a browser — no server needed. Step through the algorithm
+and watch the HashMap fill up. Rule: <b>if you can't draw it, you don't understand it yet.</b></p>
+
+<h2>1. Two Sum — step through</h2>
+<p>Array: <code>[2, 7, 11, 15]</code>, target: <code>9</code>. At each step we ask:
+have we already seen <code>target − x</code>?</p>
+<label>Array <input id="arrInput" value="2,7,11,15" size="16"></label>
+<label>Target <input id="targetInput" value="9" size="4"></label>
+<button onclick="resetTwoSum()">Reset</button>
+<button onclick="stepTwoSum()">Step ▶</button>
+<button onclick="runTwoSum()">Run all</button>
+<div id="arrayBox" style="margin:12px 0"></div>
+<div id="mapBox"></div>
+<p id="twoSumMsg"></p>
+
+<h2>2. HashMap buckets — where does a key land?</h2>
+<p>Bucket = <code>(hashCode &amp; 0x7fffffff) % 16</code>. Type a key and see its bucket.
+Keys landing in the same bucket chain together — that is a collision.</p>
+<label>Key <input id="keyInput" value="claims" size="12"></label>
+<button onclick="showBucket()">Show bucket</button>
+<div id="bucketBox"></div>
+
+<h2>3. Top-K Frequent — why a min-heap?</h2>
+<p>Frequencies: <code>1→3, 2→2, 3→1</code>, K = 2. The heap keeps only the
+<b>2 biggest</b> — the smallest is dropped as soon as the heap grows past K.
+Sorting everything would be O(n log n); the heap is O(n log K) and O(K) memory.</p>
+<table><tr><th>Step</th><th>Heap (min at top)</th><th>Action</th></tr>
+<tr><td>1</td><td>[1:3]</td><td>offer 1 (freq 3)</td></tr>
+<tr><td>2</td><td>[2:2, 1:3]</td><td>offer 2 (freq 2)</td></tr>
+<tr><td>3</td><td>[2:2, 1:3]</td><td>offer 3 (freq 1) → size 3 &gt; K → poll smallest (3) out</td></tr>
+<tr><td>result</td><td>[1, 2]</td><td>top 2 frequent</td></tr></table>
+
+<script>
+let nums = [2,7,11,15], target = 9, idx = 0, seen = new Map(), done = false;
+function render() {
+  const box = document.getElementById('arrayBox'); box.innerHTML = '';
+  nums.forEach((v,i) => {
+    const d = document.createElement('span');
+    d.className = 'cell' + (done && (i===idx-1 || seen.has(target-v)) ? ' found' : '') + (i===idx ? ' current' : '') + (i<idx ? ' seen' : '');
+    d.textContent = v + ' [' + i + ']';
+    box.appendChild(d);
+  });
+  let html = '<table><tr><th>HashMap: value → index</th></tr>';
+  seen.forEach((v,k) => { html += '<tr><td>' + k + ' → ' + v + '</td></tr>'; });
+  document.getElementById('mapBox').innerHTML = html + '</table>';
+}
+function resetTwoSum() {
+  nums = document.getElementById('arrInput').value.split(',').map(s=>parseInt(s.trim(),10)).filter(n=>!isNaN(n));
+  target = parseInt(document.getElementById('targetInput').value,10);
+  idx = 0; seen = new Map(); done = false;
+  document.getElementById('twoSumMsg').textContent = 'Ready. Press Step.';
+  render();
+}
+function stepTwoSum() {
+  if (done) return;
+  if (idx >= nums.length) { document.getElementById('twoSumMsg').textContent = 'No solution.'; done = true; render(); return; }
+  const x = nums[idx], need = target - x;
+  if (seen.has(need)) {
+    document.getElementById('twoSumMsg').textContent = 'FOUND! ' + need + ' + ' + x + ' = ' + target + ' → indices [' + seen.get(need) + ', ' + idx + ']';
+    done = true; idx++; render(); return;
+  }
+  seen.set(x, idx);
+  document.getElementById('twoSumMsg').textContent = 'x = ' + x + ', need ' + need + ' — not seen yet. Store ' + x + ' → ' + idx + '.';
+  idx++; render();
+}
+function runTwoSum() { while (!done && idx <= nums.length) stepTwoSum(); }
+function showBucket() {
+  const key = document.getElementById('keyInput').value;
+  let h = 0; for (const c of key) h = (h*31 + c.charCodeAt(0)) | 0; // Java String.hashCode
+  const bucket = (h & 0x7fffffff) % 16;
+  document.getElementById('bucketBox').innerHTML =
+    '<p>Key <b>' + key + '</b> → hashCode ' + h + ' → bucket <b>' + bucket + '</b> of 16.</p>' +
+    '<p>Try <code>claims</code>, <code>orders</code>, <code>members</code> — if two land in the same bucket, that is a collision, and they chain in that bucket.</p>';
+}
+resetTwoSum(); showBucket();
+</script>
+</body>
+</html>
