@@ -1,0 +1,38 @@
+name: DSA Java CI
+
+# Runs on every push and every pull request to main or dev.
+# Babu's repo default branch is dev, so dev must trigger CI too —
+# otherwise a push to dev would show no CI run at all.
+# Green CI = every lesson compiles and runs clean.
+#
+# Lesson 1's Main is in a package: package com.sarat.learning;
+# so it must be compiled with -d and run by its fully qualified
+# name: java -cp out com.sarat.learning.Main
+# Plain `java Main` does NOT work for a packaged class.
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Compile all lessons
+        run: |
+          set -e
+          mkdir -p out
+          javac -d out $(find . -path ./out -prune -o -name "*.java" -print)
+
+      - name: Run Lesson 1
+        run: java -cp out com.sarat.learning.Main
